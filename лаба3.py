@@ -76,3 +76,4 @@ K_A_transposed = [[K * A_transposed[i][j] for j in range(N)] for i in range(N)]
 print_matrix(K_A_transposed, "K * A^T")
 Final_Result = [[A_squared[i][j] + K_A_transposed[i][j] for j in range(N)] for i in range(N)]
 print_matrix(Final_Result, "A * A + (K * A^T)")
+input()
