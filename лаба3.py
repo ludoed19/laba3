@@ -1,5 +1,4 @@
 import random
-
 K = int(input("K: "))
 N = int(input("N: "))
 random.seed(K)
