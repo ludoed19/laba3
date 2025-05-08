@@ -1,8 +1,13 @@
-import random
+def matrix_generator(K, N):
+    for i in range(N):
+        row = []
+        for j in range(N):
+            val = (K * i + j) % 21 - 10 
+            row.append(val)
+        yield row
 K = int(input("K: "))
 N = int(input("N: "))
-random.seed(K)
-A = [[random.randint(-10, 10) for _ in range(N)] for _ in range(N)]
+A = [row for row in matrix_generator(K, N)]
 print("A:")
 for row in A:
     print(row)
@@ -28,7 +33,6 @@ def print_matrix(matrix, name):
     print(f"\n {name}:")
     for row in matrix:
         print(row)
-print_matrix(A, "A")
 F = [row[:] for row in A]
 def min_in_odd_columns(matrix, N):
     min_elements = []
@@ -58,21 +62,16 @@ else:
             if i < j and i + j > N - 1:  
                 if i > j and i + j > N - 1:  
                     F[i][j], F[i][j] = F[i][j], F[i][j]
-print_matrix(F, "F")
+
 def multiply_matrices(A, B, N):
-    result = [[0] * N for _ in range(N)]
-    for i in range(N):
-        for j in range(N):
-            for k in range(N):
-                result[i][j] += A[i][k] * B[k][j]
-    return result
+    return [[sum(A[i][k] * B[k][j] for k in range(N)) for j in range(N)] for i in range(N)]
 def transpose_matrix(A, N):
     return [[A[j][i] for j in range(N)] for i in range(N)]
 A_squared = multiply_matrices(A, A, N)
-print_matrix(A_squared, "A * A")
 A_transposed = transpose_matrix(A, N)
 K_A_transposed = [[K * A_transposed[i][j] for j in range(N)] for i in range(N)]
-print_matrix(K_A_transposed, "K * A^T")
 Final_Result = [[A_squared[i][j] + K_A_transposed[i][j] for j in range(N)] for i in range(N)]
+print_matrix(F, "F")
+print_matrix(A_squared, "A * A")
+print_matrix(K_A_transposed, "K * A^T")
 print_matrix(Final_Result, "A * A + (K * A^T)")
-input()
