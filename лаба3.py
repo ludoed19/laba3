@@ -1,77 +1,83 @@
-def matrix_generator(K, N):
-    for i in range(N):
-        row = []
-        for j in range(N):
-            val = (K * i + j) % 21 - 10 
-            row.append(val)
-        yield row
-K = int(input("K: "))
-N = int(input("N: "))
-A = [row for row in matrix_generator(K, N)]
-print("A:")
-for row in A:
-    print(row)
-part_1 = []  
-part_2 = []  
-part_3 = []  
-part_4 = []  
-for i in range(N):
-    for j in range(N):
-        if i < j and i + j < N - 1:
-            part_1.append(A[i][j])  
-        elif i < j and i + j > N - 1:
-            part_2.append(A[i][j])  
-        elif i > j and i + j > N - 1:
-            part_3.append(A[i][j])  
-        elif i > j and i + j < N - 1:
-            part_4.append(A[i][j])  
-print("\n 1:", part_1)
-print(" 2 :", part_2)
-print(" 3 :", part_3)
-print(" 4 :", part_4)
-def print_matrix(matrix, name):
-    print(f"\n {name}:")
+def print_matrix(matrix, title):
+    print(title)
     for row in matrix:
-        print(row)
-F = [row[:] for row in A]
-def min_in_odd_columns(matrix, N):
-    min_elements = []
-    for j in range(1, N, 2):  
-        for i in range(N):
-            if i < j and i + j > N - 1: 
-                min_elements.append(matrix[i][j])
-    return min_elements.count(min(min_elements)) if min_elements else 0
-def max_in_even_rows(matrix, N):
-    max_elements = []
-    for i in range(0, N, 2): 
-        for j in range(N):
-            if i < j and i + j < N - 1:  
-                max_elements.append(matrix[i][j])
-    return max_elements.count(max(max_elements)) if max_elements else 0
-min_count = min_in_odd_columns(A, N)
-max_count = max_in_even_rows(A, N)
-if min_count > max_count:
-    for i in range(N):
-        for j in range(N):
-            if i < j and i + j < N - 1:  
-                if i < j and i + j > N - 1:  
-                    F[i][j], F[N - j - 1][N - i - 1] = F[N - j - 1][N - i - 1], F[i][j]
-else:
-    for i in range(N):
-        for j in range(N):
-            if i < j and i + j > N - 1:  
-                if i > j and i + j > N - 1:  
-                    F[i][j], F[i][j] = F[i][j], F[i][j]
-
-def multiply_matrices(A, B, N):
-    return [[sum(A[i][k] * B[k][j] for k in range(N)) for j in range(N)] for i in range(N)]
-def transpose_matrix(A, N):
-    return [[A[j][i] for j in range(N)] for i in range(N)]
-A_squared = multiply_matrices(A, A, N)
-A_transposed = transpose_matrix(A, N)
-K_A_transposed = [[K * A_transposed[i][j] for j in range(N)] for i in range(N)]
-Final_Result = [[A_squared[i][j] + K_A_transposed[i][j] for j in range(N)] for i in range(N)]
-print_matrix(F, "F")
-print_matrix(A_squared, "A * A")
-print_matrix(K_A_transposed, "K * A^T")
-print_matrix(Final_Result, "A * A + (K * A^T)")
+        print(' '.join(f"{elem:4}" for elem in row))
+    print()
+def generate_matrix(N):
+    return [[i*N + j + 1 for j in range(N)] for i in range(N)]
+def get_part_perimeter_sum(matrix, part):
+    N = len(matrix)
+    if part == 1:  
+        return sum(matrix[0])
+    elif part == 4:  
+        return sum(row[0] for row in matrix)
+    return 0
+def get_part_perimeter_zero_count(matrix, part):
+    N = len(matrix)
+    if part == 4: 
+        return sum(1 for row in matrix if row[0] == 0)
+    return 0
+def swap_parts_symmetrical(F, N):
+    mid = N // 2
+    part1 = [row[:mid] for row in F[:mid]]
+    part3 = [row[mid + (N%2):] for row in F[mid + (N%2):]]
+    for i in range(mid):
+        for j in range(mid):
+            F[i][j] = part3[mid-1-i][mid-1-j]
+    for i in range(mid + (N%2), N):
+        for j in range(mid + (N%2), N):
+            F[i][j] = part1[N-1-i][N-1-j]
+    return F
+def swap_parts_asymmetrical(F, N):
+    mid = N // 2
+    part1 = [row[:mid] for row in F[:mid]]
+    part2 = [row[mid:] for row in F[:mid]] 
+    for i in range(mid):
+        F[i][:mid] = part2[i]
+        F[i][mid:] = part1[i]
+    return F
+def transpose(matrix):
+    return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
+def matrix_multiply(A, B):
+    n = len(A)
+    m = len(A[0])
+    p = len(B[0])
+    return [[sum(A[i][k] * B[k][j] for k in range(m)) for j in range(p)] for i in range(n)]
+def matrix_scalar_multiply(matrix, scalar):
+    return [[scalar * elem for elem in row] for row in matrix]
+def matrix_subtract(A, B):
+    return [[A[i][j] - B[i][j] for j in range(len(A[0]))] for i in range(len(A))]
+def main():
+    K = int(input("Введите число K: "))
+    N = int(input("Введите размер матрицы N: "))
+    if N < 2:
+        print("Ошибка: N должно быть ≥ 2")
+        return
+    A = generate_matrix(N)
+    print_matrix(A, "A:")
+    F = [row.copy() for row in A]
+    sum_part1 = get_part_perimeter_sum(A, 1)
+    zero_count_part4 = get_part_perimeter_zero_count(A, 4)
+    print(f"Сумма по периметру области 1: {sum_part1}")
+    print(f"Количество нулей по периметру области 4: {zero_count_part4}")
+    if sum_part1 > zero_count_part4:
+        print("Условие выполнено: меняем области 1 и 3 симметрично")
+        F = swap_parts_symmetrical(F, N)
+    else:
+        print("Условие не выполнено: меняем области 1 и 2 несимметрично")
+        F = swap_parts_asymmetrical(F, N)
+    print_matrix(F, "F:")
+    AT = transpose(A)
+    print_matrix(AT, "A^T:")
+    K_AT = matrix_scalar_multiply(AT, K)
+    print_matrix(K_AT, "K * A^T:")
+    K_AT_A = matrix_multiply(K_AT, A)
+    print_matrix(K_AT_A, "(K * A^T) * A:")
+    FT = transpose(F)
+    print_matrix(FT, "F^T:")
+    K_FT = matrix_scalar_multiply(FT, K)
+    print_matrix(K_FT, "K * F^T:")
+    result = matrix_subtract(K_AT_A, K_FT)
+    print_matrix(result, "((K * A^T) * A) - K * F^T:")
+if __name__ == "__main__":
+    main()
