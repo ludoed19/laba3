@@ -1,85 +1,103 @@
 # 26. Формируется матрица F следующим образом: 
 # Скопировать в нее матрицу А и если сумма чисел по периметру области 1 больше, чем количество нулей по периметру области 4, то поменять симметрично области 1 и 3 местами, иначе 1 и 2 поменять местами несимметрично. При этом матрица А не меняется. После чего вычисляется выражение:((К*AT)*А)-K*FT . Выводятся по мере формирования А, F и все матричные операции последовательно.
-def print_matrix(matrix, title):
-    print(title)
+from copy import deepcopy
+def deterministic_generator(seed, N):
+    matrix = []
+    for i in range(N):
+        row = []
+        for j in range(N):
+            val = (seed + i * N + j) % 21 - 10
+            row.append(val)
+        matrix.append(row)
+    return matrix
+def print_matrix(matrix, title="Matrix"):
+    print(f"{title}:")
     for row in matrix:
-        print(' '.join(f"{elem:4}" for elem in row))
+        print(" ".join(f"{elem:4}" for elem in row))
     print()
-def generate_matrix(N):
-    return [[i*N + j + 1 for j in range(N)] for i in range(N)]
-def get_part_perimeter_sum(matrix, part):
-    N = len(matrix)
-    if part == 1:  
-        return sum(matrix[0])
-    elif part == 4:  
-        return sum(row[0] for row in matrix)
-    return 0
-def get_part_perimeter_zero_count(matrix, part):
-    N = len(matrix)
-    if part == 4: 
-        return sum(1 for row in matrix if row[0] == 0)
-    return 0
-def swap_parts_symmetrical(F, N):
-    mid = N // 2
-    part1 = [row[:mid] for row in F[:mid]]
-    part3 = [row[mid + (N%2):] for row in F[mid + (N%2):]]
-    for i in range(mid):
-        for j in range(mid):
-            F[i][j] = part3[mid-1-i][mid-1-j]
-    for i in range(mid + (N%2), N):
-        for j in range(mid + (N%2), N):
-            F[i][j] = part1[N-1-i][N-1-j]
-    return F
-def swap_parts_asymmetrical(F, N):
-    mid = N // 2
-    part1 = [row[:mid] for row in F[:mid]]
-    part2 = [row[mid:] for row in F[:mid]] 
-    for i in range(mid):
-        F[i][:mid] = part2[i]
-        F[i][mid:] = part1[i]
-    return F
-def transpose(matrix):
+def sum_perimeter_region1(matrix, N):
+    half = N // 2
+    total = 0
+    total += sum(matrix[0][:half])
+    for i in range(1, half):
+        total += matrix[i][half-1]
+    if N % 2 == 1:
+        total += sum(matrix[half][:half])
+    else:
+        for i in range(half):
+            total += matrix[half-1][i]
+    for i in range(1, half):
+        total += matrix[i][0]
+    return total
+def count_zeros_perimeter_region4(matrix, N):
+    half = N // 2
+    count = 0
+    for i in range(half, N):
+        if matrix[i][0] == 0:
+            count += 1 
+    if N % 2 == 1:
+        for j in range(1, half):
+            if matrix[N-1][j] == 0:
+                count += 1
+    else:
+        for j in range(1, half):
+            if matrix[N-1][j] == 0:
+                count += 1
+    for i in range(N-1, half, -1):
+        if matrix[i][half-1] == 0:
+            count += 1
+    return count
+def swap_regions_1_3_symmetrical(F, N):
+    half = N // 2
+    for i in range(half):
+        for j in range(half):
+            F[i][j], F[N - 1 - i][j] = F[N - 1 - i][j], F[i][j]
+def swap_regions_1_2_asymmetrical(F, N):
+    half = N // 2
+    for i in range(half):
+        for j in range(half):
+            if N % 2 == 0:
+                F[i][j], F[i][j + half] = F[i][j + half], F[i][j]
+            else:
+                F[i][j], F[i][j + half + 1] = F[i][j + half + 1], F[i][j]
+def transpose_matrix(matrix):
     return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
-def matrix_multiply(A, B):
+def multiply_matrices(A, B):
     n = len(A)
-    m = len(A[0])
-    p = len(B[0])
-    return [[sum(A[i][k] * B[k][j] for k in range(m)) for j in range(p)] for i in range(n)]
-def matrix_scalar_multiply(matrix, scalar):
-    return [[scalar * elem for elem in row] for row in matrix]
-def matrix_subtract(A, B):
+    return [[sum(A[i][k] * B[k][j] for k in range(n)) for j in range(n)] for i in range(n)]
+def multiply_matrix_by_scalar(matrix, scalar):
+    return [[elem * scalar for elem in row] for row in matrix]
+def subtract_matrices(A, B):
     return [[A[i][j] - B[i][j] for j in range(len(A[0]))] for i in range(len(A))]
 def main():
-    K = int(input("Введите число K: "))
-    N = int(input("Введите размер матрицы N: "))
-    if N < 2:
-        print("Ошибка: N должно быть ≥ 2")
-        return
-    A = generate_matrix(N)
-    print_matrix(A, "A:")
-    F = [row.copy() for row in A]
-    sum_part1 = get_part_perimeter_sum(A, 1)
-    zero_count_part4 = get_part_perimeter_zero_count(A, 4)
-    print(f"Сумма по периметру области 1: {sum_part1}")
-    print(f"Количество нулей по периметру области 4: {zero_count_part4}")
-    if sum_part1 > zero_count_part4:
-        print("Условие выполнено: меняем области 1 и 3 симметрично")
-        F = swap_parts_symmetrical(F, N)
+    K = int(input("Введите K: "))
+    N = int(input("Введите N: "))
+    seed = 42  
+    A = deterministic_generator(seed, N)
+    print_matrix(A, "Исходная матрица A")
+    F = deepcopy(A)
+    sum_r1 = sum_perimeter_region1(A, N)
+    zeros_r4 = count_zeros_perimeter_region4(A, N)
+    print(f"Сумма по периметру области 1: {sum_r1}")
+    print(f"Количество нулей по периметру области 4: {zeros_r4}")
+    if sum_r1 > zeros_r4:
+        print("Сумма области 1 > нулей области 4, меняем 1 и 3 симметрично")
+        swap_regions_1_3_symmetrical(F, N)
     else:
-        print("Условие не выполнено: меняем области 1 и 2 несимметрично")
-        F = swap_parts_asymmetrical(F, N)
-    print_matrix(F, "F:")
-    AT = transpose(A)
-    print_matrix(AT, "A^T:")
-    K_AT = matrix_scalar_multiply(AT, K)
-    print_matrix(K_AT, "K * A^T:")
-    K_AT_A = matrix_multiply(K_AT, A)
-    print_matrix(K_AT_A, "(K * A^T) * A:")
-    FT = transpose(F)
-    print_matrix(FT, "F^T:")
-    K_FT = matrix_scalar_multiply(FT, K)
-    print_matrix(K_FT, "K * F^T:")
-    result = matrix_subtract(K_AT_A, K_FT)
-    print_matrix(result, "((K * A^T) * A) - K * F^T:")
+        print("Сумма области 1 <= нулей области 4, меняем 1 и 2 несимметрично")
+        swap_regions_1_2_asymmetrical(F, N)   
+    print_matrix(F, "Матрица F после преобразований")
+    AT = transpose_matrix(A)
+    print_matrix(AT, "A^T")
+    K_AT = multiply_matrix_by_scalar(AT, K)
+    print_matrix(K_AT, "K*A^T")
+    K_AT_A = multiply_matrices(K_AT, A)
+    print_matrix(K_AT_A, "(K*A^T)*A")
+    FT = transpose_matrix(F)
+    print_matrix(FT, "F^T")
+    K_FT = multiply_matrix_by_scalar(FT, K)
+    print_matrix(K_FT, "K*F^T")
+    result = subtract_matrices(K_AT_A, K_FT)
+    print_matrix(result, "Результат ((K*A^T)*A) - K*F^T")
 if __name__ == "__main__":
     main()
